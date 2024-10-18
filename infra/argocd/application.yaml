@@ -1,0 +1,57 @@
+---
+# Argo CD Application for User Service
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: userservice
+spec:
+  source:
+    repoURL: 'https://github.com/arun-0/microservices-app.git'
+    path: infra/helm/userservice
+    targetRevision: HEAD
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  project: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+
+---
+# Argo CD Application for Orders Service
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: orderservice
+spec:
+  source:
+    repoURL: 'https://github.com/arun-0/microservices-app.git'
+    path: infra/helm/orderservice
+    targetRevision: HEAD
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+
+---
+# Argo CD Application for Kafka Producer
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kafkaproducer
+spec:
+  source:
+    repoURL: 'https://github.com/arun-0/microservices-app.git'
+    path: infra/helm/kafkaproducer
+    targetRevision: HEAD
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

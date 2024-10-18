@@ -1,0 +1,46 @@
+# Istio Virtual Service for User Service
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: userservice
+spec:
+  hosts:
+    - userservice
+  http:
+    - route:
+        - destination:
+            host: userservice
+            port:
+              number: 80
+
+---
+# Istio Virtual Service for Orders Service
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: orderservice
+spec:
+  hosts:
+    - orderservice
+  http:
+    - route:
+        - destination:
+            host: orderservice
+            port:
+              number: 80
+
+---
+# Istio Virtual Service for Kafka Producer
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: kafkaproducer
+spec:
+  hosts:
+    - kafkaproducer
+  http:
+    - route:
+        - destination:
+            host: kafkaproducer
+            port:
+              number: 80

@@ -1,0 +1,8 @@
+replicaCount: 1
+image:
+  repository: your-docker-repo/kafkaproducer
+  pullPolicy: Always
+  tag: "latest"
+service:
+  type: ClusterIP
+  port: 80

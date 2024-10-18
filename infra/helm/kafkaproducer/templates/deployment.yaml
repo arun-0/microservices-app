@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafkaproducer
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: kafkaproducer
+  template:
+    metadata:
+      labels:
+        app: kafkaproducer
+    spec:
+      containers:
+      - name: kafkaproducer
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        ports:
+        - containerPort: 8080
+        env:
+        - name: KAFKA_BROKER
+          value: "my-kafka-bootstrap.kafka:9092"
