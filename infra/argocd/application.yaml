@@ -48,6 +48,14 @@ spec:
     repoURL: 'https://github.com/arun-0/microservices-app.git'
     path: infra/helm/kafkaproducer
     targetRevision: HEAD
+    helm:       # helm: This section allows you to pass parameters to your Helm chart during the deployment. will only have an effect if your Helm chart is designed to use those variables.
+      parameters:
+        - name: image.repository
+          value: your-docker-repo/kafkaproducer
+        - name: image.tag
+          value: latest  # Update if you're using a specific tag
+    credentials:
+      - name: argocd-github-creds
   destination:
     server: https://kubernetes.default.svc
     namespace: default
