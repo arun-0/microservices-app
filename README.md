@@ -65,6 +65,12 @@ microservices-app/
 
 
 ================================
+A resource in Terraform represents an infrastructure component ie a single piece of infrastructure eg such as an EC2 instance, S3 bucket, or VPC.
+A module is a container for multiple resources that are used together. It allows for code reusability and organization.
+Modules can include resources, data sources, and other modules. They can be local (defined in your own project) or remote (shared and sourced from the Terraform Registry or other repositories).
+For example, module "eks" is referencing a pre-defined module for creating an EKS (Elastic Kubernetes Service) cluster, which abstracts away the details and complexities involved in setting up an EKS cluster.
+
+
 Terraform Example Directory Structure:
 
 terraform/
@@ -82,7 +88,7 @@ terraform/
 
 Other less common OR advanced files
 ├── provider.tf        # Provider (AWS, GCP, etc.) configuration
-├── data.tf            # Data sources to pull existing resources
+├── data.tf            # Data sources to pull existing resources. The data block is used to reference outputs from other Terraform configurations (modules) by reading their state, allowing you to utilize shared resources or configuration details.
 ├── locals.tf          # Local variables for reuse
 ├── versions.tf        # Terraform and provider version constraints
 ├── modules/           # Directory for Terraform modules
@@ -297,6 +303,21 @@ AWS CLI manual commands
 
 Creating an S3 Bucke
 aws s3 mb s3://your-terraform-state-bucket --region us-west-2
+getting account ID
+aws sts get-caller-identity --query Account --output text
+aws iam get-user
+aws sts get-caller-identity  # AWS account and the ARN of the IAM user or role
+
+Terraform commands
+Terraform will automatically combine all .tf files in the same directory during execution, so separating your outputs into a different file is perfectly fine.
+
+terraform init
+terraform plan
+Terraform plan -out=tfplan
+terraform apply
+terraform apply "tfplan"
+terraform state list
+terraform state show aws_s3_bucket.terraform_state
 
 ==============================
 
@@ -310,3 +331,114 @@ Choose Free Tier-Eligible instance types if available.
 Set the number of brokers to 2 or 3.
 Proceed with default settings and create the cluster.
 
+================
+
+"from_port" of ingress = the lower bound of the port of this host itself where it can accept the traffic
+"to_port" of ingress = the upper bound of the port of this host itself where it can accept the traffic
+
+
+"from_port" of egress = the port of this host
+"to_port" of egress = the port of the recieving end
+
+
+=======================
+Ingress & Egress on AWS
+
+NOTE:- http servers listens on specific port (say 80) they still respond to the VERY SAME http request using an ephemeral port.
+
+ingress {
+  from_port   = The lower bound of the port range on this host where it will accept incoming traffic.
+  to_port     = The upper bound of the port range on this host where it will accept incoming traffic.
+}
+
+egress {
+  from_port   = It is meant not to be used at all. However it means "the port on this host that is used to send traffic from". (Often set to 0 or ignored, as it's typically an ephemeral port)
+  to_port     = The port on the receiving end (the destination) where the traffic is sent.
+}
+
+-----
+
+[1] Default Ingress: deny all inbound traffic
+All below 3, Allows traffic from any originating port of the sender, to port 80 of this host.
+Rest all ports on this host are not going to see traffic
+[2]
+ingress {
+	from_port = 80
+	to_port = 80
+}
+[3]
+ingress {
+	from_port = 80
+}
+[4]
+ingress {
+	to_port = 80 
+}
+Since default Egress is "Allow All outgoing traffic", just setting ingress is enough (practically. may or may not be good security-wise though)
+
+--------
+Default Egress:
+[1] AWS default egress policy = allow all outbound traffic.
+from_port is prohibited. Because be it a http-sever or kafka consumer/producer, they all use ephemeral ports for outgoing traffic.
+Either DONT use from_port, or set it to zero.
+[2]
+Only practical scenario:
+egress {
+    from_port = 0
+    to_port = 80/9092 # or any fixed port
+}
+and
+egress {
+    to_port = 80/9092 # or any fixed port
+}
+Allows all traffic sent to port 80/9092 of the reciever
+
+[3]
+egress {
+	from_port = 80 # or any fixed port
+}
+AND
+egress {
+	from_port = 80 # or any fixed port
+	to_port = 80
+}
+Both are a conceptual bug. this server wont respond to any traffic as a http server uses ephemeral port
+However first one means,  "traffic from 80 of this host to any port of the recieving host".
+However second one means, "traffic from 80 of this host to port 80 of the recieving host".
+
+[3]
+default [means no egress rule at all}
+and
+egress {
+    from_port = 0
+    to_port = 0
+}
+and
+egress {
+    to_port = 0
+}
+and
+egress {
+    from_port = 0
+}
+All means same. All allow all egress traffic
+[5]
+The only meaningful egress config is
+egress {
+    from_port = 0
+    to_port = 80/9092 # or any fixed port
+}
+and
+egress {
+    to_port = 80/9092 # or any fixed port
+}
+AND
+[6]
+  # Egress rule to deny all outbound traffic
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"  # -1 means all protocols
+    cidr_blocks = []     # An empty list means no outbound traffic is allowed
+  }
+-----
