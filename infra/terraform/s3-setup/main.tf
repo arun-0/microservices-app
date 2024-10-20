@@ -61,19 +61,19 @@ data "aws_dynamodb_table" "existing_table" {
 }
 
 # Delete the existing DynamoDB table if it exists
-resource "null_resource" "delete_dynamodb_table" {
-  count = length(data.aws_dynamodb_table.existing_table) > 0 ? 1 : 0
+#resource "null_resource" "delete_dynamodb_table" {
+#  count = length(data.aws_dynamodb_table.existing_table) > 0 ? 1 : 0
+#
+#  provisioner "local-exec" {
+#    command = "aws dynamodb delete-table --table-name terraform-locks"
+#  }
+#
+#  triggers = {
+#    always_run = "${timestamp()}"
+#  }
+#}
 
-  provisioner "local-exec" {
-    command = "aws dynamodb delete-table --table-name terraform-locks"
-  }
-
-  triggers = {
-    always_run = "${timestamp()}"
-  }
-}
-
-# Optionally, create a DynamoDB table for state locking (to avoid concurrent modifications)
+# Create/Reuse a DynamoDB table for state locking (to avoid concurrent modifications)
 resource "aws_dynamodb_table" "terraform_locks" {
   count = length(data.aws_dynamodb_table.existing_table) == 0 ? 1 : 0
 
