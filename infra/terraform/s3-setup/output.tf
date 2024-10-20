@@ -4,5 +4,6 @@ output "terraform_state_bucket" {
 }
 
 output "dynamodb_creation_status" {
+  description = "Status of the DynamoDB table creation"
   value = length(data.aws_dynamodb_table.existing_table) > 0 ? "Reused existing DynamoDB table: terraform-locks" : "Created new DynamoDB table: terraform-locks"
 }
