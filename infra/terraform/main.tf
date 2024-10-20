@@ -1,10 +1,15 @@
-# QQ - data = refer the output'ted data from other modules
-data "terraform_remote_state" "s3_setup" {
-  backend = "local"   # Assuming local state is used for the s3-setup
-  config = {
-    path = "./s3-setup/terraform.tfstate"  # Path to the state file in ./s3-setup
-  }
+variable "s3_bucket" {
+  description = "The S3 bucket name for storing Terraform state"
+  type        = string
 }
+
+# QQ - data = refer the output'ted data from other modules
+#data "terraform_remote_state" "s3_setup" {
+#  backend = "local"   # Assuming local state is used for the s3-setup
+#  config = {
+#    path = "./s3-setup/terraform.tfstate"  # Path to the state file in ./s3-setup
+#  }
+#}
 
 # Configure the backend to store the Terraform state in S3 (can go in backend.tf)
 terraform {
@@ -16,7 +21,8 @@ terraform {
   }
   required_version = ">= 1.3.0"
   backend "s3" {
-    bucket         = "terraform-state-bucket-20241019015747"  # QQ - how to Dynamically use the created bucket. may be using script or CI/CD pipeline??. As The backend configuration in Terraform does not support dynamic values like outputs from a terraform_remote_state. It must be a static configuration.
+#    bucket         = "terraform-state-bucket-20241019015747"  # QQ - how to Dynamically use the created bucket. may be using script or CI/CD pipeline??. As The backend configuration in Terraform does not support dynamic values like outputs from a terraform_remote_state. It must be a static configuration.
+    bucket         = var.s3_bucket
     key            = "microservices-app/terraform.tfstate"	# state path & file within the bucket
     region         = "us-east-1"		# replace with you region
     dynamodb_table = "terraform-locks"  # Name of the DynamoDB table for locking
