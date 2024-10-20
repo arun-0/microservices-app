@@ -1,10 +1,16 @@
 spring:
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: b-1.mskkafkacluster.5tdxzm.c3.kafka.us-east-1.amazonaws.com:9094,b-2.mskkafkacluster.5tdxzm.c3.kafka.us-east-1.amazonaws.com:9094
     producer:
+      ssl:
+        endpoint-identification-algorithm: https
+        truststore-location: /path/to/truststore.jks
+        truststore-password: your-password
+      security:
+        protocol: SSL
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-    
+
 kafka:
   topic:
     name: my-topic

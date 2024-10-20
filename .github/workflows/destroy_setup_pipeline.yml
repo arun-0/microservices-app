@@ -1,0 +1,35 @@
+name: Destroy Infrastructure Pipeline
+
+on:
+  workflow_dispatch:  # Manually triggered
+
+jobs:
+  destroy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout code
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      # Step 2: Set up AWS credentials
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # Step 3: Install Terraform
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v1
+
+      # Step 4: Destroy Main Terraform Infrastructure
+      - name: Terraform Destroy (Main Infra)
+        working-directory: infra/terraform
+        run: terraform destroy -auto-approve
+
+      # Step 5: Destroy S3 Setup
+      - name: Terraform Destroy (s3-setup)
+        working-directory: infra/terraform/s3-setup
+        run: terraform destroy -auto-approve

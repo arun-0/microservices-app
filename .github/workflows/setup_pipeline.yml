@@ -1,0 +1,124 @@
+name: One-Time Setup Pipeline [Setup Infrastructure Pipeline]
+
+on:
+  workflow_dispatch:  # Manually triggered
+
+jobs:
+  setup-infra:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout code
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      # Step 2: Set up AWS credentials
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # Step 3: Install Terraform
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v1
+
+      # Step 4: Initialize and Apply s3-setup for backend configuration
+      - name: Terraform Init (s3-setup)
+        working-directory: infra/terraform/s3-setup
+        run: terraform init
+
+      - name: Terraform Apply (s3-setup)
+        working-directory: infra/terraform/s3-setup
+        run: terraform apply -auto-approve
+
+      # Step 5: Initialize and Apply Main Terraform for infrastructure setup
+      - name: Terraform Init (Main Infra)
+        working-directory: infra/terraform
+        run: terraform init
+
+      - name: Terraform Apply (Main Infra)
+        working-directory: infra/terraform
+        run: terraform apply -auto-approve
+
+      # Step 6: Run Kafka Certificate Setup
+      - name: Run Kafka Certificate Setup
+        run: |
+          chmod +x .github/scripts/setup_kafka_certs.sh
+          .github/scripts/setup_kafka_certs.sh
+
+      # Add other steps as needed (ArgoCD, EKS, Kafka, etc.)
+
+
+  setup:
+    runs-on: ubuntu-latest
+    needs: setup-infra  # Ensure this job runs after the setup-infra job
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Generate Kubeconfig for EKS
+      - name: Generate Kubeconfig for EKS
+        run: |
+          aws eks update-kubeconfig --name microservices-cluster --region ${{ secrets.AWS_REGION }}
+          cp ~/.kube/config kubeconfig.yaml  # Use cp instead of cat for clarity
+
+      # Set up Kubernetes with generated Kubeconfig
+      - name: Set up Kubernetes
+        run: |
+          export KUBECONFIG=$(pwd)/kubeconfig.yaml  # Use the path to the generated kubeconfig
+
+
+      - name: Check if Argo CD is installed
+        id: check_argocd
+        run: |
+          kubectl get ns argocd || exit 1  # Check if Argo CD namespace exists
+
+      - name: Install Argo CD
+        if: steps.check_argocd.outcome == 'failure'
+        run: |
+          kubectl create namespace argocd
+          kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+          kubectl expose svc argocd-server -n argocd --type=LoadBalancer --port 80 --target-port 443
+
+#      last 2 steps but with help of scripts
+#      - name: Check if Argo CD is installed
+#        id: check_argocd
+#        run: |
+#          chmod +x .github/scripts/check_argocd_installation.sh
+#          .github/scripts/check_argocd_installation.sh
+#
+#      - name: Install Argo CD
+#        if: steps.check_argocd.outcome == 'failure'
+#        run: |
+#          chmod +x .github/scripts/install_argocd.sh
+#          .github/scripts/install_argocd.sh
+#
+
+      - name: Check if microservices namespace exists
+        id: check_namespace
+        run: |
+          chmod +x .github/scripts/check_namespace.sh
+          .github/scripts/check_namespace.sh
+
+      - name: Create microservices namespace
+        if: steps.check_namespace.outcome == 'failure'
+        run: |
+          chmod +x .github/scripts/create_namespace.sh
+          .github/scripts/create_namespace.sh
+
+#      - name: Check if CRD is installed
+#        id: check_crd
+#        run: |
+#          chmod +x .github/scripts/check_install_crds.sh
+#          .github/scripts/check_install_crds.sh
+
+#      - name: Install CRD
+#        if: steps.check_crd.outcome == 'failure'
+#        run: |
+#          chmod +x .github/scripts/install_crds.sh
+#          .github/scripts/install_crds.sh
+
+      # Add any additional one-time setup checks and installations here

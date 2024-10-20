@@ -1,0 +1,70 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Generate Kubeconfig for EKS
+      - name: Generate Kubeconfig for EKS
+        run: |
+          aws eks update-kubeconfig --name microservices-cluster --region ${{ secrets.AWS_REGION }}
+          cp ~/.kube/config kubeconfig.yaml  # Use cp instead of cat for clarity
+
+      # Set up Kubernetes with generated Kubeconfig
+      - name: Set up Kubernetes
+        run: |
+          export KUBECONFIG=$(pwd)/kubeconfig.yaml  # Use the path to the generated kubeconfig
+
+      - name: Install Argo CD CLI
+        run: |
+          curl -sSL https://raw.githubusercontent.com/argoproj/argo-cd/stable/install.sh | bash
+
+#     previous step but with help of script
+#      - name: Argo CD CLI installation
+#        id: check_cli
+#        run: |
+#          chmod +x .github/scripts/install_argocd_cli.sh
+#          .github/scripts/install_argocd_cli.sh
+
+      - name: Get Argo CD Server URL
+        id: argocd-server
+        run: |
+          ARGOCD_SERVER=$(kubectl get svc argocd-server -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+          echo "ARGOCD_SERVER=${ARGOCD_SERVER}" >> $GITHUB_ENV
+          
+      - name: Get Argo CD Password
+        id: argocd-password
+        run: |
+          ARGOCD_PASSWORD=$(kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath='{.data.password}' | base64 --decode)
+          echo "ARGOCD_PASSWORD=${ARGOCD_PASSWORD}" >> $GITHUB_ENV
+
+      - name: Login to Argo CD
+        env:
+          ARGOCD_SERVER: ${{ steps.argocd-server.outputs.ARGOCD_SERVER }}
+          ARGOCD_USERNAME: admin  # Use 'admin' if you haven't changed it
+          ARGOCD_PASSWORD: ${{ env.ARGOCD_PASSWORD }}
+        run: |
+          argocd login $ARGOCD_SERVER --username $ARGOCD_USERNAME --password $ARGOCD_PASSWORD --insecure
+
+#      old. using Github repo secrets
+#      - name: Login to Argo CD
+#        env:
+#          ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
+#          ARGOCD_USERNAME: ${{ secrets.ARGOCD_USERNAME }}
+#          ARGOCD_PASSWORD: ${{ secrets.ARGOCD_PASSWORD }}
+#        run: |
+#          argocd login $ARGOCD_SERVER --username $ARGOCD_USERNAME --password $ARGOCD_PASSWORD --insecure
+
+      - name: Sync Argo CD Applications
+        run: |
+          argocd app sync userservice
+          argocd app sync orderservice
+          argocd app sync kafkaproducer

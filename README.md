@@ -214,7 +214,7 @@ aws configure
 	Enter your AWS Access Key ID, Secret Access Key, Default region
 Install Terraform (verify with "terraform -v")
 
-Firt create:
+First create:
 S3 Bucket to store the Terraform state file.
 DynamoDB Table to store state locks for preventing race conditions in multi-user environments.
 	cd infra/terraform/s3-setup
@@ -226,7 +226,9 @@ Now provision the AWS infra:
 	terraform init //Re-initialize Terraform to use the S3 backend. Terraform will now migrate your local state to the S3 bucket and use it for future state management.
 	terraform plan
 	terraform apply
-
+		outputs:
+		eks_cluster_endpoint = "https://4A00F9E7ED0578621FF8A0D35CF1FE0C.gr7.us-east-1.eks.amazonaws.com"
+		kafka_broker_endpoints = "b-1.mskkafkacluster.5tdxzm.c3.kafka.us-east-1.amazonaws.com:9094,b-2.mskkafkacluster.5tdxzm.c3.kafka.us-east-1.amazonaws.com:9094"
 
 Once the EKS cluster is up, you’ll need to configure kubectl to interact with it.
 Install kubectl
@@ -312,13 +314,17 @@ Terraform commands
 Terraform will automatically combine all .tf files in the same directory during execution, so separating your outputs into a different file is perfectly fine.
 
 terraform init
+terraform provides
+terraform providers lock
+terraform validate # to check for any syntax errors or misconfigurations in your .tf files.
 terraform plan
 Terraform plan -out=tfplan
 terraform apply
 terraform apply "tfplan"
 terraform state list
 terraform state show aws_s3_bucket.terraform_state
-
+terraform state show -state=./s3-setup/terraform.tfstate aws_s3_bucket.terraform_state
+terraform refresh
 ==============================
 
 to Create an AWS MSK Cluster on web UI:
