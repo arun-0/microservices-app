@@ -4,6 +4,7 @@ provider "aws" {
 
 resource "aws_s3_bucket" "terraform_state" {
   bucket = "terraform-state-bucket-${formatdate("YYYYMMDDHHmmss", timestamp())}"  # Using a timestamp for global uniqueness
+  force_destroy = true	  # Automatically delete all objects, including versions, before destroying the bucket
   tags = {
     Name        = "TerraformState"
     Environment = "Production"
