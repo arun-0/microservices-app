@@ -36,7 +36,11 @@ jobs:
       # Step 5: Retrieve the output from the s3-setup
       - name: Get S3 Bucket Name
         id: get_s3_bucket
-        run: echo "S3_BUCKET=$(terraform output -raw terraform_state_bucket)" >> $GITHUB_ENV
+        run: |
+          echo "S3_BUCKET=$(terraform output -raw terraform_state_bucket)" >> $GITHUB_ENV
+          #echo "S3 Bucket Name: $(aws s3api list-buckets --query "Buckets[].Name" --output text | grep terraform-state-bucket)"
+          echo "Terraform State S3 Bucket Name: $S3_BUCKET"
+          echo "Terraform State lock table : $(terraform output -raw dynamodb_creation_status)"
 
       # Step 5: Initialize and Apply Main Terraform for infrastructure setup
       - name: Terraform Init (Main Infra)

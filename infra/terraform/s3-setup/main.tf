@@ -54,8 +54,29 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "terraform_state_e
   }
 }
 
+# Check if the DynamoDB table exists
+data "aws_dynamodb_table" "existing_table" {
+  count = 1
+  name  = "terraform-locks"
+}
+
+# Delete the existing DynamoDB table if it exists
+resource "null_resource" "delete_dynamodb_table" {
+  count = length(data.aws_dynamodb_table.existing_table) > 0 ? 1 : 0
+
+  provisioner "local-exec" {
+    command = "aws dynamodb delete-table --table-name terraform-locks"
+  }
+
+  triggers = {
+    always_run = "${timestamp()}"
+  }
+}
+
 # Optionally, create a DynamoDB table for state locking (to avoid concurrent modifications)
 resource "aws_dynamodb_table" "terraform_locks" {
+  count = length(data.aws_dynamodb_table.existing_table) == 0 ? 1 : 0
+
   name         = "terraform-locks"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "LockID"
