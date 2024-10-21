@@ -170,38 +170,20 @@ module "eks_cluster" {		# string "eks_cluster" can be anything, it serves as a l
 }
 
 
-
-# Secrets for EKS Cluster Endpoint
-resource "aws_secretsmanager_secret" "eks_cluster_secret" {
+# Populate Secrets for EKS and MSK Cluster Endpoint
+# Secrets for EKS
+data "aws_secretsmanager_secret" "eks_cluster_secret" {
   name        = "eks-cluster-endpoint"
-  description = "EKS Cluster Endpoint"
 }
 resource "aws_secretsmanager_secret_version" "eks_cluster_secret_value" {
-  secret_id     = aws_secretsmanager_secret.eks_cluster_secret.id
+  secret_id     = data.aws_secretsmanager_secret.eks_cluster_secret.id
   secret_string = module.eks_cluster.cluster_endpoint
 }
-
 # Secrets for Kafka Broker Endpoints
-resource "aws_secretsmanager_secret" "kafka_broker_secret" {
+data "aws_secretsmanager_secret" "kafka_broker_secret" {
   name        = "kafka-broker-endpoints"
-  description = "Kafka Broker Endpoints"
 }
 resource "aws_secretsmanager_secret_version" "kafka_broker_secret_value" {
-  secret_id     = aws_secretsmanager_secret.kafka_broker_secret.id
+  secret_id     = data.aws_secretsmanager_secret.kafka_broker_secret.id
   secret_string = aws_msk_cluster.msk_kafka.bootstrap_brokers_tls
-}
-
-# aws secretsmanager get-secret-value --secret-id eks-cluster-endpoint --query SecretString --output text
-# aws secretsmanager get-secret-value --secret-id kafka-broker-endpoints --query SecretString --output text
-
-
-# New Secrets for Kafka PEM and Truststore
-resource "aws_secretsmanager_secret" "kafka_truststore_secret" {
-  name        = "kafka-truststore"
-  description = "Kafka Truststore"
-}
-
-resource "aws_secretsmanager_secret" "kafka_pem_secret" {
-  name        = "kafka-pem"
-  description = "Kafka PEM"
 }

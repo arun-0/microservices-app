@@ -2,9 +2,9 @@ name: One-Time Setup Pipeline [Setup Infrastructure Pipeline]
 
 on:
   workflow_dispatch:  # Manually triggered
-  push:
-    branches:
-      - main
+#  push:
+#    branches:
+#      - main
 
 jobs:
   setup-infra:
