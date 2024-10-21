@@ -2,13 +2,14 @@ name: One-Time Setup Pipeline [Setup Infrastructure Pipeline]
 
 on:
   workflow_dispatch:  # Manually triggered
-#  push:
-#    branches:
-#      - main
+  push:
+    branches:
+      - main
 
 jobs:
-  setup-infra:
+  setup-infra-s3:
     runs-on: ubuntu-latest
+    if: false
 
     steps:
       # Step 1: Checkout code
@@ -36,7 +37,11 @@ jobs:
         working-directory: infra/terraform/s3-setup
         run: terraform apply -auto-approve
 
-      # Step 5: Retrieve the bucket name
+  setup-infra-cluster:
+    runs-on: ubuntu-latest
+    if: false
+
+      # Step 1: Retrieve the bucket name
       - name: Get S3 Bucket Name
         id: get_s3_bucket_name
         run: |
@@ -45,7 +50,7 @@ jobs:
           echo "Terraform State S3 Bucket Name: ${S3_BUCKET}"
           echo "Using S3 Bucket: ${{ env.S3_BUCKET }}"
 
-      # Step 6: Initialize and Apply Main Terraform for infrastructure setup
+      # Step 2: Initialize and Apply Main Terraform for infrastructure setup
       - name: Terraform Init (Main Infra)
         working-directory: infra/terraform
         run: terraform init -backend-config="bucket=${{ env.S3_BUCKET }}"
@@ -58,7 +63,10 @@ jobs:
           echo "Using S3 Bucket: ${{ env.S3_BUCKET }}"
           terraform apply -auto-approve -var="s3_bucket=${{ env.S3_BUCKET }}"
 
-      # Step 6: Run Kafka Certificate Setup
+  config-kafka:
+    runs-on: ubuntu-latest
+
+      # Run Kafka Certificate Setup
       - name: Run Kafka Certificate Setup
         run: |
           chmod +x .github/scripts/setup_kafka_certs.sh
@@ -67,7 +75,7 @@ jobs:
       # Add other steps as needed (ArgoCD, EKS, Kafka, etc.)
 
 
-  setup:
+  config-kube-argocd:
     runs-on: ubuntu-latest
     needs: setup-infra  # Ensure this job runs after the setup-infra job
 
