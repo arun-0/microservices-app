@@ -57,7 +57,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "terraform_state_e
 # Delete the existing DynamoDB table if it exists
 resource "null_resource" "delete_dynamodb_table" {
   provisioner "local-exec" {
-    command = "aws dynamodb delete-table --table-name terraform-locks || true"
+    command = "aws dynamodb delete-table --table-name terraform-locks 2>nul || exit 0"
   }
   
   triggers = {
@@ -65,13 +65,33 @@ resource "null_resource" "delete_dynamodb_table" {
   }
 }
 
+# Wait for DynamoDB table deletion to complete
+resource "null_resource" "wait_for_dynamodb_deletion" {
+  depends_on = [null_resource.delete_dynamodb_table]
+
+  provisioner "local-exec" {
+    command = <<EOT
+      echo "Waiting for DynamoDB table deletion..."
+      until ! aws dynamodb describe-table --table-name terraform-locks 2>/dev/null; do
+        echo "Table still exists, waiting..."
+        sleep 10
+      done
+      echo "DynamoDB table deletion confirmed."
+    EOT
+  }
+}
+
 # Create the DynamoDB table for state locking (to avoid concurrent modifications)
 resource "aws_dynamodb_table" "terraform_locks" {
-  count = length(null_resource.delete_dynamodb_table) > 0 ? 1 : 0  # Always create the table after deletion
+  count = 1
 
   name         = "terraform-locks"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "LockID"
+
+  # Ensure that this resource depends on the deletion confirmation
+  depends_on = [null_resource.wait_for_dynamodb_deletion]
+
   attribute {
     name = "LockID"
     type = "S"

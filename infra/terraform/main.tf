@@ -22,7 +22,7 @@ terraform {
   required_version = ">= 1.3.0"
   backend "s3" {
 #    bucket         = "terraform-state-bucket-20241019015747"  # QQ - how to Dynamically use the created bucket. may be using script or CI/CD pipeline??. As The backend configuration in Terraform does not support dynamic values like outputs from a terraform_remote_state. It must be a static configuration.
-    bucket         = var.s3_bucket
+#    bucket         = var.s3_bucket		# var. doesnt work, as backend config does not allow dynamic values
     key            = "microservices-app/terraform.tfstate"	# state path & file within the bucket
     region         = "us-east-1"		# replace with you region
     dynamodb_table = "terraform-locks"  # Name of the DynamoDB table for locking

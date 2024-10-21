@@ -1,7 +1,7 @@
 name: One-Time Setup Pipeline [Setup Infrastructure Pipeline]
 
 on:
-#  workflow_dispatch:  # Manually triggered
+  workflow_dispatch:  # Manually triggered
   push:
     branches:
       - main
@@ -36,18 +36,70 @@ jobs:
         working-directory: infra/terraform/s3-setup
         run: terraform apply -auto-approve
 
+      - name: Show Terraform Outputs
+        working-directory: infra/terraform/s3-setup
+        run: |
+          echo "here1"
+          terraform output
+          echo "here2"
+          terraform output -raw terraform_state_bucket
+          echo "here3"
+          # Run the terraform command and write the output to a temporary file
+          terraform output -raw terraform_state_bucket > temp_s3_bucket.txt
+          echo "here4"
+          # Read the value from the temporary file
+          echo "here5"
+          S3_BUCKET=$(cat temp_s3_bucket.txt)
+          echo "here6"
+          echo "1234Raw output: ${S3_BUCKET}"  # Debug output
+
+#          eval "S3_BUCKET=\$(terraform output -raw terraform_state_bucket)"
+#          S3_BUCKET=$(terraform output -raw terraform_state_bucket)
+
       # Step 5: Retrieve the output from the s3-setup
       - name: Get S3 Bucket Name
         id: get_s3_bucket
+        working-directory: infra/terraform/s3-setup
         run: |
-          echo "S3_BUCKET=$(terraform output -raw terraform_state_bucket)" >> $GITHUB_ENV
-          #echo "S3 Bucket Name: $(aws s3api list-buckets --query "Buckets[].Name" --output text | grep terraform-state-bucket)"
-          echo "Terraform State S3 Bucket Name: $S3_BUCKET"
+          # Run the terraform command and capture the output
+          S3_BUCKET=$(terraform output -raw terraform_state_bucket 2>&1)
+          # Check for any errors in the output
+          if [[ $? -ne 0 ]]; then
+            echo "Error running terraform output: ${S3_BUCKET}"
+            exit 1
+          fi
+          echo "Raw output: ${S3_BUCKET}"  # Debug output
+          if [ -z "$S3_BUCKET" ]; then
+            echo "Error: S3_BUCKET is empty."
+            exit 1
+          fi
+          echo "S3_BUCKET=${S3_BUCKET}" >> $GITHUB_ENV
+          echo "Terraform State S3 Bucket Name: ${S3_BUCKET}"
+
+#          S3_BUCKET=$(terraform output -raw terraform_state_bucket)
+#          echo "Raw output: ${S3_BUCKET}"  # Debug output
+#          if [ -z "$S3_BUCKET" ]; then
+#            echo "Error: S3_BUCKET is empty."
+#            exit 1
+#          fi
+#          echo "S3_BUCKET=${S3_BUCKET}"
+#          echo "S3_BUCKET=${S3_BUCKET}" >> $GITHUB_ENV
+#          echo "Terraform State S3 Bucket Name: ${S3_BUCKET}"
+#          #echo "S3 Bucket Name: $(aws s3api list-buckets --query "Buckets[].Name" --output text | grep terraform-state-bucket)"
+
+
+#      # Debug S3_BUCKET before main infra
+#      - name: Debug S3 Bucket
+#        env:
+#          S3_BUCKET: ${{ env.S3_BUCKET }}
+#        run: echo "S3_BUCKET: $S3_BUCKET"
+
 
       # Step 5: Initialize and Apply Main Terraform for infrastructure setup
       - name: Terraform Init (Main Infra)
         working-directory: infra/terraform
-        run: terraform init
+        run: terraform init -backend-config="bucket=${{ env.S3_BUCKET }}"
+#        run: terraform init -backend-config="bucket=${S3_BUCKET}"
 
       - name: Terraform Apply (Main Infra)
         working-directory: infra/terraform
