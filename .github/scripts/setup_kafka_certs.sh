@@ -14,7 +14,7 @@ check_secret_value_exists() {
 }
 
 # Check if the Kafka Truststore secret exists and has a value
-if check_secret_value_exists "kafka/truststore"; then
+if check_secret_value_exists "kafka-truststore"; then
   echo "Kafka truststore already exists. Skipping download and creation."
   exit 0
 fi
