@@ -2,8 +2,21 @@ provider "aws" {
   region = "us-east-1"
 }
 
+data "aws_secretsmanager_secret" "terraform_state_bucket" {
+  name = "terraform_state_bucket"
+}
+
+data "aws_secretsmanager_secret_version" "terraform_state_bucket_version" {
+  secret_id = data.aws_secretsmanager_secret.terraform_state_bucket.id
+}
+
+# Assuming the secret value is a plain string (the S3 bucket name)
+output "s3_bucket_name" {
+  value = data.aws_secretsmanager_secret_version.terraform_state-bucket.secret_string
+}
+
 resource "aws_s3_bucket" "terraform_state" {
-  bucket = "terraform-state-bucket-${formatdate("YYYYMMDDHHmmss", timestamp())}"  # Using a timestamp for global uniqueness
+  bucket = data.aws_secretsmanager_secret_version.terraform_state_bucket_version.secret_string  # Use the secret value
   force_destroy = true	  # Automatically delete all objects, including versions, before destroying the bucket
   tags = {
     Name        = "TerraformState"
