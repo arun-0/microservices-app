@@ -65,9 +65,9 @@ resource "null_resource" "delete_dynamodb_table" {
   }
 }
 
-# Create/Reuse a DynamoDB table for state locking (to avoid concurrent modifications)
+# Create the DynamoDB table for state locking (to avoid concurrent modifications)
 resource "aws_dynamodb_table" "terraform_locks" {
-  count = (null_resource.check_dynamodb_table.provisioner.local-exec.stdout == "not_found") ? 1 : 0
+  count = length(null_resource.delete_dynamodb_table) > 0 ? 1 : 0  # Always create the table after deletion
 
   name         = "terraform-locks"
   billing_mode = "PAY_PER_REQUEST"
