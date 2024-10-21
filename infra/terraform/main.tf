@@ -100,7 +100,7 @@ resource "aws_security_group" "eks_sg" {
   # Egress rule to only allow traffic to Kafka on its port 9092
   egress {
     from_port   = 0  # Allows traffic from any source port
-    to_port     = 9092  # Allows traffic to Kafka on port 9092
+    to_port     = 9094  # Allows traffic to Kafka on port 9092
     protocol    = "tcp"
     # security_groups = [aws_security_group.msk_sg.id]  # Allow traffic to the Kafka SG. QQ -but this cause cycle therefore using VPC DICR as below
     cidr_blocks = ["10.0.0.0/16"]  # Allow traffic to the entire VPC
@@ -171,19 +171,28 @@ module "eks_cluster" {		# string "eks_cluster" can be anything, it serves as a l
 
 
 # Populate Secrets for EKS and MSK Cluster Endpoint
-# Secrets for EKS
 data "aws_secretsmanager_secret" "eks_cluster_secret" {
-  name        = "eks-cluster-endpoint"
+  name        = "eks_cluster_endpoint"
+}
+# Conditional resource creation based on whether the secret exists
+resource "aws_secretsmanager_secret" "eks_cluster_secret" {
+  count = length(data.aws_secretsmanager_secret.eks_cluster_secret.id) == 0 ? 1 : 0
+  name  = "eks_cluster_endpoint"
 }
 resource "aws_secretsmanager_secret_version" "eks_cluster_secret_value" {
-  secret_id     = data.aws_secretsmanager_secret.eks_cluster_secret.id
+  secret_id     = coalesce(data.aws_secretsmanager_secret.eks_cluster_secret.id, aws_secretsmanager_secret.eks_cluster_secret[0].id)
   secret_string = module.eks_cluster.cluster_endpoint
 }
-# Secrets for Kafka Broker Endpoints
 data "aws_secretsmanager_secret" "kafka_broker_secret" {
-  name        = "kafka-broker-endpoints"
+  name        = "kafka_broker_endpoints"
+}
+# Conditional resource creation based on whether the secret exists
+resource "aws_secretsmanager_secret" "kafka_broker_secret" {
+  count = length(data.aws_secretsmanager_secret.kafka_broker_secret.id) == 0 ? 1 : 0
+  name  = "kafka_broker_endpoints"
 }
 resource "aws_secretsmanager_secret_version" "kafka_broker_secret_value" {
+  secret_id     = coalesce(data.aws_secretsmanager_secret.kafka_broker_secret.id, aws_secretsmanager_secret.kafka_broker_secret[0].id)
   secret_id     = data.aws_secretsmanager_secret.kafka_broker_secret.id
   secret_string = aws_msk_cluster.msk_kafka.bootstrap_brokers_tls
 }

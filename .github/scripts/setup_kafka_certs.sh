@@ -38,5 +38,6 @@ keytool -import -alias kafka -file kafka.pem -keystore kafka.truststore.jks -sto
 
 # Upload truststore and PEM to AWS Secrets Manager
 echo "Uploading truststore and PEM to AWS Secrets Manager..."
-aws secretsmanager create-secret --name kafka/truststore --secret-binary fileb://kafka.truststore.jks --description "Kafka Truststore"
-aws secretsmanager create-secret --name kafka/pem --secret-binary fileb://kafka.pem --description "Kafka PEM"
+aws secretsmanager update-secret --name kafka-truststore --secret-binary fileb://kafka.truststore.jks --description "Kafka Truststore"
+aws secretsmanager update-secret --name kafka-pem --secret-binary fileb://kafka.pem --description "Kafka PEM"
+aws secretsmanager update-secret --name truststore-password --secret-string "$TRUSTSTORE_PASSWORD" --description "Truststore Password"

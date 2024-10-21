@@ -79,6 +79,7 @@ jobs:
 
   config-kafka:
     runs-on: ubuntu-latest
+    if: false
 
     steps:
 
