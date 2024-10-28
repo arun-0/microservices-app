@@ -4,15 +4,19 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: userservice
+  namespace: argocd
 spec:
+  project: default
   source:
     repoURL: 'https://github.com/arun-0/microservices-app.git'
-    path: infra/helm/userservice
     targetRevision: HEAD
+    path: infra/helm/userservice
+#    helm:
+#      valueFiles:
+#        - values.yaml  # Assuming you have a values.yaml file in each service folder
   destination:
     server: https://kubernetes.default.svc
-    namespace: default
-  project: default
+    namespace: dev
   syncPolicy:
     automated:
       prune: true
@@ -24,42 +28,44 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: orderservice
+  namespace: argocd
 spec:
+  project: default
   source:
     repoURL: 'https://github.com/arun-0/microservices-app.git'
-    path: infra/helm/orderservice
     targetRevision: HEAD
+    path: infra/helm/orderservice
   destination:
     server: https://kubernetes.default.svc
-    namespace: default
+    namespace: dev
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
 
----
+#---
 # Argo CD Application for Kafka Producer
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: kafkaproducer
-spec:
-  source:
-    repoURL: 'https://github.com/arun-0/microservices-app.git'
-    path: infra/helm/kafkaproducer
-    targetRevision: HEAD
-    helm:       # helm: This section allows you to pass parameters to your Helm chart during the deployment. will only have an effect if your Helm chart is designed to use those variables.
-      parameters:
-        - name: image.repository
-          value: your-docker-repo/kafkaproducer
-        - name: image.tag
-          value: latest  # Update if you're using a specific tag
-    credentials:
-      - name: argocd-github-creds
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: default
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
+#apiVersion: argoproj.io/v1alpha1
+#kind: Application
+#metadata:
+#  name: kafkaproducer
+#spec:
+#  source:
+#    repoURL: 'https://github.com/arun-0/microservices-app.git'
+#    path: infra/helm/kafkaproducer
+#    targetRevision: HEAD
+#    helm:       # helm: This section allows you to pass parameters to your Helm chart during the deployment. will only have an effect if your Helm chart is designed to use those variables.
+#      parameters:
+#        - name: image.repository
+#          value: your-docker-repo/kafkaproducer
+#        - name: image.tag
+#          value: latest  # Update if you're using a specific tag
+#    credentials:
+#      - name: argocd-github-creds
+#  destination:
+#    server: https://kubernetes.default.svc
+#    namespace: default
+#  syncPolicy:
+#    automated:
+#      prune: true
+#      selfHeal: true

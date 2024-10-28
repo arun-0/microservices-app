@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: userservice
+  name: orderservice
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: userservice
+      app: orderservice
   template:
     metadata:
       labels:
-        app: userservice
+        app: orderservice
     spec:
       containers:
-      - name: userservice
-        image: userservice:1.0.0
+      - name: orderservice
+        image: orderservice:1.0.0
         ports:
-        - containerPort: 8080
+        - containerPort: 8081
