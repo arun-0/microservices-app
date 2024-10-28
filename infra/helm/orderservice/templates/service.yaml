@@ -3,9 +3,10 @@ kind: Service
 metadata:
   name: orderservice
 spec:
+  type: NodePort
   ports:
   - port: 8081
     targetPort: 8081
-    nodePort: 8081
+    nodePort: 30081
   selector:
     app: orderservice
