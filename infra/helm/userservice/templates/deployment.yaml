@@ -14,6 +14,6 @@ spec:
     spec:
       containers:
       - name: userservice
-        image: userservice:1.0.0
+        image: userservice:1.0.1
         ports:
         - containerPort: 8080
